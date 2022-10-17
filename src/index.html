@@ -37,9 +37,12 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
+    let sphere = undefined;
+
     function main() {
         const canvas = document.querySelector('#c');
         const renderer = new THREE.WebGLRenderer({ canvas });
+        renderer.shadowMap.enabled = true;
         const loader = new THREE.TextureLoader();
 
         const fov = 45;
@@ -47,17 +50,17 @@
         const near = 0.1;
         const far = 100;
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-        camera.position.set(0, 10, 20);
+        camera.position.set(20, 20, 20);
 
         const controls = new OrbitControls(camera, canvas);
         controls.target.set(0, 5, 0);
         controls.update();
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color('black');
+        scene.background = new THREE.Color('#999');
 
         {
-            const planeSize = 40;
+            const planeSize = 100;
 
             const loader = new THREE.TextureLoader();
             const texture = loader.load('https://threejs.org/manual/examples/resources/images/checker.png');
@@ -73,6 +76,7 @@
                 side: THREE.DoubleSide,
             });
             const mesh = new THREE.Mesh(planeGeo, planeMat);
+            mesh.receiveShadow = true;
             mesh.rotation.x = Math.PI * -.5;
             scene.add(mesh);
         }
@@ -81,7 +85,9 @@
             const cubeGeo = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
             const cubeMat = new THREE.MeshPhongMaterial({ color: '#8AC' });
             const mesh = new THREE.Mesh(cubeGeo, cubeMat);
-            mesh.position.set(cubeSize + 1, cubeSize / 2, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.set(cubeSize + 1, cubeSize / 2, -12);
             scene.add(mesh);
         }
         {
@@ -91,17 +97,46 @@
             const sphereGeo = new THREE.SphereGeometry(sphereRadius, sphereWidthDivisions, sphereHeightDivisions);
             const sphereMat = new THREE.MeshPhongMaterial({ map: loader.load('./assets/world-map.jpg') });
             const mesh = new THREE.Mesh(sphereGeo, sphereMat);
-            mesh.position.set(-sphereRadius - 1, sphereRadius + 2, 0);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.rotation.x = 0.001;
+            mesh.position.set(-10, sphereRadius + 2, 0);
             scene.add(mesh);
+            sphere = mesh;
         }
         {
             const coneRadius = 8;
-            const coneHeight = 10;
+            const coneHeight = 6;
             const coneRadialSegment = 4;
             const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, coneRadialSegment);
-            const coneMat = new THREE.MeshPhongMaterial({ color: '#aaa' })
+            const coneMat = new THREE.MeshPhongMaterial({ color: '#736ebf' })
             const mesh = new THREE.Mesh(coneGeo, coneMat);
-            mesh.position.set(10, 0, 10);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.set(10, coneHeight / 2, 10);
+            scene.add(mesh);
+        }
+        {
+            const umbrellaHandleRadius = .2;
+            const umbrellasHandleHeight = 6;
+            const umbrellasHandleRadialSegments = 32;
+            const umbrellasHandleGeo = new THREE.CylinderGeometry(umbrellaHandleRadius, umbrellaHandleRadius, umbrellasHandleHeight, umbrellasHandleRadialSegments);
+            const umbrellasHandleMat = new THREE.MeshPhongMaterial({ color: '#555' });
+            let mesh = new THREE.Mesh(umbrellasHandleGeo, umbrellasHandleMat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.set(-20, umbrellasHandleHeight / 2, 20);
+            scene.add(mesh);
+
+            const umbrellaRadius = 5;
+            const umbrellaHeight = 2;
+            const umbrellaRadialSegment = 64;
+            const umbrellaGeo = new THREE.ConeGeometry(umbrellaRadius, umbrellaHeight, umbrellaRadialSegment);
+            const umbrellaMat = new THREE.MeshPhongMaterial({ color: '#736ebf' })
+            mesh = new THREE.Mesh(umbrellaGeo, umbrellaMat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.set(-20, umbrellasHandleHeight, 20);
             scene.add(mesh);
         }
 
@@ -127,9 +162,10 @@
         }
 
         {
-            const color = 0xFFFFFF;
+            const color = '#FFFFFF';
             const intensity = 1;
             const light = new THREE.PointLight(color, intensity);
+            light.castShadow = true;
             light.position.set(0, 10, 0);
             scene.add(light);
 
@@ -159,7 +195,7 @@
             return needResize;
         }
 
-        function render() {
+        function render(time) {
 
             if (resizeRendererToDisplaySize(renderer)) {
                 const canvas = renderer.domElement;
@@ -167,11 +203,12 @@
                 camera.updateProjectionMatrix();
             }
 
+            sphere.rotation.y = time * 0.001;
+
             renderer.render(scene, camera);
 
             requestAnimationFrame(render);
         }
-
         requestAnimationFrame(render);
     }
 
